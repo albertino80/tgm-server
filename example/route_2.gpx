@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+
+<gpx version="1.1" creator="gpxgenerator.com">
+<metadata>
+    <name>Chiesa di San Giorgio</name>
+    <link href="http://sourceforge.net/projects/pytrainer"/>
+    <time>2009-06-19T10:13:04Z</time>
+</metadata>
+
+<wpt lat="44.64568960719544" lon="10.925779647331323">
+    <ele>35.49</ele>
+    <time>2020-02-01T16:32:21Z</time>
+</wpt>
+<wpt lat="44.64545965655982" lon="10.926428741912927">
+    <ele>38.82</ele>
+    <time>2020-02-01T16:33:01Z</time>
+</wpt>
+<wpt lat="44.645776514141815" lon="10.92671873943988">
+    <ele>40.77</ele>
+    <time>2020-02-01T16:33:31Z</time>
+</wpt>
+<wpt lat="44.646097107217244" lon="10.927099613119994">
+    <ele>40.10</ele>
+    <time>2020-02-01T16:34:04Z</time>
+</wpt>
+<wpt lat="44.64590246163275" lon="10.927378562857543">
+    <ele>40.96</ele>
+    <time>2020-02-01T16:34:26Z</time>
+</wpt>
+<wpt lat="44.646944380387446" lon="10.928065208365355">
+    <ele>48.20</ele>
+    <time>2020-02-01T16:35:57Z</time>
+</wpt>
+<wpt lat="44.64756646947561" lon="10.92846753971759">
+    <ele>33.34</ele>
+    <time>2020-02-01T16:36:51Z</time>
+</wpt>
+<wpt lat="44.64762083584435" lon="10.928308973510106">
+    <ele>35.32</ele>
+    <time>2020-02-01T16:37:00Z</time>
+</wpt>
+<wpt lat="44.64775044184388" lon="10.92791803086213">
+    <ele>41.18</ele>
+    <time>2020-02-01T16:37:24Z</time>
+</wpt>
+<wpt lat="44.64759015009646" lon="10.927874444965639">
+    <ele>41.59</ele>
+    <time>2020-02-01T16:37:36Z</time>
+</wpt>
+<wpt lat="44.64755675592666" lon="10.928008555416383">
+    <ele>40.90</ele>
+    <time>2020-02-01T16:37:44Z</time>
+</wpt>
+</gpx>

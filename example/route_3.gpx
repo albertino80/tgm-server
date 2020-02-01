@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+
+<gpx version="1.1" creator="gpxgenerator.com">
+<metadata>
+    <name>Parco Giardino Ducale Estense</name>
+    <link href="http://sourceforge.net/projects/pytrainer"/>
+    <time>2009-06-19T10:13:04Z</time>
+</metadata>
+<wpt lat="44.6459851204858" lon="10.925902977266988">
+    <ele>33.68</ele>
+    <time>2020-02-01T16:41:32Z</time>
+</wpt>
+<wpt lat="44.646216023179896" lon="10.926037087717733">
+    <ele>35.13</ele>
+    <time>2020-02-01T16:41:51Z</time>
+</wpt>
+<wpt lat="44.64656142136199" lon="10.926324084082326">
+    <ele>36.18</ele>
+    <time>2020-02-01T16:42:22Z</time>
+</wpt>
+<wpt lat="44.64625971376404" lon="10.926827940457589">
+    <ele>38.04</ele>
+    <time>2020-02-01T16:42:59Z</time>
+</wpt>
+<wpt lat="44.64598682886868" lon="10.927249047272927">
+    <ele>40.93</ele>
+    <time>2020-02-01T16:43:31Z</time>
+</wpt>
+<wpt lat="44.64571012609055" lon="10.927874001973397">
+    <ele>44.31</ele>
+    <time>2020-02-01T16:44:12Z</time>
+</wpt>
+<wpt lat="44.645194882917686" lon="10.929062220566994">
+    <ele>35.97</ele>
+    <time>2020-02-01T16:45:30Z</time>
+</wpt>
+<wpt lat="44.64617551776923" lon="10.929891986455432">
+    <ele>35.52</ele>
+    <time>2020-02-01T16:47:00Z</time>
+</wpt>
+<wpt lat="44.64656480645259" lon="10.930280906762592">
+    <ele>38.70</ele>
+    <time>2020-02-01T16:47:37Z</time>
+</wpt>
+<wpt lat="44.646959817299106" lon="10.930656416024677">
+    <ele>36.74</ele>
+    <time>2020-02-01T16:48:14Z</time>
+</wpt>
+<wpt lat="44.64749220058095" lon="10.931194175243032">
+    <ele>35.28</ele>
+    <time>2020-02-01T16:49:06Z</time>
+</wpt>
+<wpt lat="44.64810474269078" lon="10.931819129943502">
+    <ele>35.23</ele>
+    <time>2020-02-01T16:50:06Z</time>
+</wpt>
+<wpt lat="44.64831083017063" lon="10.932063210963857">
+    <ele>34.92</ele>
+    <time>2020-02-01T16:50:27Z</time>
+</wpt>
+<wpt lat="44.64852836616055" lon="10.932206709146154">
+    <ele>34.49</ele>
+    <time>2020-02-01T16:50:46Z</time>
+</wpt>
+</gpx>

@@ -1,4 +1,5 @@
 QT -= gui
+QT += xml
 
 CONFIG += c++11 console
 CONFIG -= app_bundle
@@ -16,13 +17,14 @@ DEFINES += NO_SSL
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        main.cpp \
         ../civetweb/src/handle_form.inl \
         ../civetweb/src/md5.inl \
         ../civetweb/src/sha1.inl \
         ../civetweb/src/timer.inl \
         ../civetweb/src/civetweb.c \
-        ../civetweb/src/CivetServer.cpp
+        ../civetweb/src/CivetServer.cpp \
+        main_server.cpp \
+        routeshandler.cpp
 
 INCLUDEPATH += $$PWD/../civetweb/include
 
@@ -30,3 +32,6 @@ INCLUDEPATH += $$PWD/../civetweb/include
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+HEADERS += \
+	routeshandler.h
