@@ -3,6 +3,7 @@
 
 #include "CivetServer.h"
 #include <QVector>
+#include <QPointF>
 
 class RoutesHandler: public CivetHandler
 {
