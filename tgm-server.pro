@@ -1,5 +1,6 @@
 QT -= gui
 QT += xml
+QT += network
 
 CONFIG += c++11 console
 CONFIG -= app_bundle
@@ -24,7 +25,8 @@ SOURCES += \
         ../civetweb/src/civetweb.c \
         ../civetweb/src/CivetServer.cpp \
         main_server.cpp \
-        routeshandler.cpp
+        routeshandler.cpp \
+        telegrampoll.cpp
 
 INCLUDEPATH += $$PWD/../civetweb/include
 
@@ -34,4 +36,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-	routeshandler.h
+	routeshandler.h \
+	telegrampoll.h

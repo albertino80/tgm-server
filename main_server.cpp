@@ -1,15 +1,14 @@
+#include <QCoreApplication>
+#include <QSettings>
+#include <QFile>
+#include <QDebug>
+
 #include "CivetServer.h"
 #include <cstring>
 #include "routeshandler.h"
+#include <thread>
+#include "telegrampoll.h"
 
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
-
-#define DOCUMENT_ROOT "."
-#define PORT "8081"
 #define EXAMPLE_URI "/example"
 #define EXIT_URI "/exit"
 
@@ -103,21 +102,35 @@ class AHandler : public CivetHandler
     }
 };
 
-int main(int /*argc*/, char * /*argv*/[])
+int main(int argc, char * argv[])
 {
-    const char *options[] = {
-        "document_root", DOCUMENT_ROOT,
-        "listening_ports", PORT,
-        nullptr
-    };
+    QCoreApplication a(argc, argv);
+
+    if(!QFile::exists("server.ini")){
+        qDebug() << "Missing server.ini";
+        return 1;
+    }
+
+    QSettings settings("server.ini", QSettings::IniFormat);
+
+    QString wwwRoot = settings.value("general/document_root", "www").toString();
+    QString srvPort = settings.value("general/port", "8081").toString();
+    QString tgmToken = settings.value("telegram/token").toString();
+    bool tgmPolling = settings.value("telegram/polling", "N").toString().compare("Y", Qt::CaseInsensitive) == 0;
+
+    std::vector<std::string> options;
+    options.push_back( "document_root" );
+    options.push_back( wwwRoot.toStdString() );
+    options.push_back( "listening_ports" );
+    options.push_back( srvPort.toStdString() );
 
     CivetServer server(options); // <-- C style start
 
     ExampleHandler h_ex;
-    server.addHandler(EXAMPLE_URI, h_ex);
+    server.addHandler("/example", h_ex);
 
     ExitHandler h_exit;
-    server.addHandler(EXIT_URI, h_exit);
+    server.addHandler("/exit", h_exit);
 
     AHandler h_a;
     server.addHandler("/a", h_a);
@@ -126,15 +139,16 @@ int main(int /*argc*/, char * /*argv*/[])
     h_r.parseRoutes();
     server.addHandler("/routes", h_r);
 
-    printf("Run example at http://localhost:%s%s\n", PORT, EXAMPLE_URI);
-    printf("Exit at http://localhost:%s%s\n", PORT, EXIT_URI);
+    printf("Run example at http://localhost:%s%s\n", srvPort.toStdString().c_str(), "/example");
+    printf("Exit at http://localhost:%s%s\n", srvPort.toStdString().c_str(), "/exit");
+
+    TelegramPoll tgmPoll(tgmToken);
 
     while (!exitNow) {
-#ifdef _WIN32
-        Sleep(1000);
-#else
-        sleep(1);
-#endif
+        std::this_thread::sleep_for (std::chrono::seconds(3));
+        if(tgmPolling) {
+            tgmPoll.pingPong();
+        }
     }
 
     printf("Bye!\n");

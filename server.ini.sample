@@ -1,0 +1,7 @@
+[general]
+document_root=www
+port=8081
+
+[telegram]
+polling=N
+token=TOKEN_HERE
