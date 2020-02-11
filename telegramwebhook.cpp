@@ -29,7 +29,7 @@ bool TelegramWebHook::handlePost(CivetServer *server, mg_connection *conn)
     //QJsonDocument d = QJsonDocument::fromRawData( payloadStr.c_str(), int(payloadStr.size()) );
     if(!d.isNull()){
 
-        TelegramHandler tgmHelp(token, storageFolder, routesh);
+        TelegramHelper tgmHelp(token, storageFolder, routesh);
 
         QJsonObject root = d.object();
 

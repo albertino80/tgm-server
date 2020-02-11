@@ -12,7 +12,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
-TelegramHandler::TelegramHandler(const QString& vToken, const QString &vStorageFolder, const RoutesHandler& vRoutesh):
+TelegramHelper::TelegramHelper(const QString& vToken, const QString &vStorageFolder, const RoutesHandler& vRoutesh):
     token(vToken),
     storageFolder(vStorageFolder),
     routesh(vRoutesh),
@@ -21,7 +21,7 @@ TelegramHandler::TelegramHandler(const QString& vToken, const QString &vStorageF
 
 }
 
-void TelegramHandler::pingPong()
+void TelegramHelper::checkUpdates()
 {
     qDebug() << "Called" << __FUNCTION__;
 
@@ -52,7 +52,7 @@ void TelegramHandler::pingPong()
     parseGetUpdates(reply->readAll());
 }
 
-bool TelegramHandler::parseGetUpdates(const QByteArray &payload)
+bool TelegramHelper::parseGetUpdates(const QByteArray &payload)
 {
     bool messageIsOk(false);
 
@@ -83,7 +83,7 @@ bool TelegramHandler::parseGetUpdates(const QByteArray &payload)
     return messageIsOk;
 }
 
-bool TelegramHandler::parseUpdate(QJsonObject &updateObj, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::parseUpdate(QJsonObject &updateObj, QString &httpPath, QJsonDocument &jsonDoc)
 {
     bool allOk(true);
 
@@ -104,7 +104,7 @@ bool TelegramHandler::parseUpdate(QJsonObject &updateObj, QString &httpPath, QJs
     return allOk;
 }
 
-bool TelegramHandler::parseMessage(const QJsonObject &messageObj, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::parseMessage(const QJsonObject &messageObj, QString &httpPath, QJsonDocument &jsonDoc)
 {
     bool allOk(true);
     if(messageObj.contains("chat")) {
@@ -165,7 +165,7 @@ bool TelegramHandler::parseMessage(const QJsonObject &messageObj, QString &httpP
     return allOk;
 }
 
-bool TelegramHandler::parseInlineQuery(const QJsonObject &messageObj, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::parseInlineQuery(const QJsonObject &messageObj, QString &httpPath, QJsonDocument &jsonDoc)
 {
     bool allOk(false);
     if(messageObj.contains("from")) {
@@ -212,7 +212,7 @@ bool TelegramHandler::parseInlineQuery(const QJsonObject &messageObj, QString &h
     return allOk;
 }
 
-bool TelegramHandler::parseCallbackQuery(const QJsonObject &messageObj, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::parseCallbackQuery(const QJsonObject &messageObj, QString &httpPath, QJsonDocument &jsonDoc)
 {
     bool allOk(false);
     if(messageObj.contains("from")) {
@@ -232,7 +232,7 @@ bool TelegramHandler::parseCallbackQuery(const QJsonObject &messageObj, QString 
     return allOk;
 }
 
-bool TelegramHandler::parsePollAnswer(const QJsonObject &messageObj, QString & /*httpPath*/, QJsonDocument & /*jsonDoc*/)
+bool TelegramHelper::parsePollAnswer(const QJsonObject &messageObj, QString & /*httpPath*/, QJsonDocument & /*jsonDoc*/)
 {
     bool allOk(false);
     if(messageObj.contains("user")) {
@@ -249,7 +249,7 @@ bool TelegramHandler::parsePollAnswer(const QJsonObject &messageObj, QString & /
     return allOk;
 }
 
-bool TelegramHandler::parsePoll(const QJsonObject &messageObj, QString & /*httpPath*/, QJsonDocument & /*jsonDoc*/)
+bool TelegramHelper::parsePoll(const QJsonObject &messageObj, QString & /*httpPath*/, QJsonDocument & /*jsonDoc*/)
 {
     bool allOk(false);
     if(messageObj.contains("question")) {
@@ -267,7 +267,7 @@ bool TelegramHandler::parsePoll(const QJsonObject &messageObj, QString & /*httpP
     return allOk;
 }
 
-bool TelegramHandler::parseCommand(int chatId, const QString &first_name, const QString &messageText, bool &unknownCommand, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::parseCommand(int chatId, const QString &first_name, const QString &messageText, bool &unknownCommand, QString &httpPath, QJsonDocument &jsonDoc)
 {
     bool allOk(true);
 
@@ -343,7 +343,7 @@ bool TelegramHandler::parseCommand(int chatId, const QString &first_name, const 
     return allOk;
 }
 
-bool TelegramHandler::makeMessage(int chatId, const QString &message, const QJsonObject& replyMarkup, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::makeMessage(int chatId, const QString &message, const QJsonObject& replyMarkup, QString &httpPath, QJsonDocument &jsonDoc)
 {
     httpPath = QString("/bot%1/sendMessage").arg(token);
 
@@ -364,7 +364,7 @@ bool TelegramHandler::makeMessage(int chatId, const QString &message, const QJso
     return true;
 }
 
-bool TelegramHandler::makePhoto(int chatId, const QString &photoUrl, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::makePhoto(int chatId, const QString &photoUrl, QString &httpPath, QJsonDocument &jsonDoc)
 {
     httpPath = QString("/bot%1/sendPhoto").arg(token);
 
@@ -378,7 +378,7 @@ bool TelegramHandler::makePhoto(int chatId, const QString &photoUrl, QString &ht
     return true;
 }
 
-bool TelegramHandler::makePosition(int chatId, const QPointF &thePosition, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::makePosition(int chatId, const QPointF &thePosition, QString &httpPath, QJsonDocument &jsonDoc)
 {
     httpPath = QString("/bot%1/sendLocation").arg(token);
 
@@ -393,7 +393,7 @@ bool TelegramHandler::makePosition(int chatId, const QPointF &thePosition, QStri
     return true;
 }
 
-bool TelegramHandler::makeInlineQueryResult(const QString &inlineQueryId, const QJsonArray &articles, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::makeInlineQueryResult(const QString &inlineQueryId, const QJsonArray &articles, QString &httpPath, QJsonDocument &jsonDoc)
 {
     httpPath = QString("/bot%1/answerInlineQuery").arg(token);
 
@@ -407,7 +407,7 @@ bool TelegramHandler::makeInlineQueryResult(const QString &inlineQueryId, const 
     return true;
 }
 
-bool TelegramHandler::makeAnswerCallbackQuery(const QString& callbackQueryId, const QString &message, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::makeAnswerCallbackQuery(const QString& callbackQueryId, const QString &message, QString &httpPath, QJsonDocument &jsonDoc)
 {
     httpPath = QString("/bot%1/answerCallbackQuery").arg(token);
 
@@ -422,7 +422,7 @@ bool TelegramHandler::makeAnswerCallbackQuery(const QString& callbackQueryId, co
     return true;
 }
 
-bool TelegramHandler::makePoll(int chatId, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHelper::makePoll(int chatId, QString &httpPath, QJsonDocument &jsonDoc)
 {
     httpPath = QString("/bot%1/sendPoll").arg(token);
 
@@ -444,7 +444,7 @@ bool TelegramHandler::makePoll(int chatId, QString &httpPath, QJsonDocument &jso
     return true;
 }
 
-void TelegramHandler::createContactKeyboard(QJsonObject &replyMarkup)
+void TelegramHelper::createContactKeyboard(QJsonObject &replyMarkup)
 {
     QJsonArray arrRows;
     QJsonArray arrButtons1;
@@ -476,7 +476,7 @@ void TelegramHandler::createContactKeyboard(QJsonObject &replyMarkup)
     replyMarkup["keyboard"] = arrRows;
 }
 
-void TelegramHandler::createInlineKeyboard(QJsonObject &replyMarkup)
+void TelegramHelper::createInlineKeyboard(QJsonObject &replyMarkup)
 {
     QJsonArray arrRows;
     QJsonArray arrButtons;
@@ -499,7 +499,7 @@ void TelegramHandler::createInlineKeyboard(QJsonObject &replyMarkup)
     replyMarkup["inline_keyboard"] = arrRows;
 }
 
-bool TelegramHandler::replyOnChat(const QString &httpPath, const QJsonDocument &jsonDoc)
+bool TelegramHelper::replyOnChat(const QString &httpPath, const QJsonDocument &jsonDoc)
 {
     QNetworkRequest request;
     QEventLoop synchronous;
@@ -524,11 +524,11 @@ bool TelegramHandler::replyOnChat(const QString &httpPath, const QJsonDocument &
     return true;
 }
 
-bool TelegramHandler::setChatParameter(int chatId, const QString &paramValue)
+bool TelegramHelper::setChatParameter(int chatId, const QString &paramValue)
 {
     QDir sessions(storageFolder);
     if(!sessions.exists())
-        sessions.mkdir(".");
+        qDebug() << "Folder:" << sessions.path() << "does not exists";
 
     bool allOk(false);
     QFile file(sessions.filePath(QString("chat_%1.dat").arg(chatId)));
@@ -543,7 +543,7 @@ bool TelegramHandler::setChatParameter(int chatId, const QString &paramValue)
     return allOk;
 }
 
-QString TelegramHandler::getChatParameter(int chatId, const QString &defaultValue)
+QString TelegramHelper::getChatParameter(int chatId, const QString &defaultValue)
 {
     QDir sessions(storageFolder);
 

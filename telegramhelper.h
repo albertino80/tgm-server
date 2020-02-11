@@ -7,11 +7,11 @@
 #include <QtNetwork/QNetworkAccessManager>
 #include "routeshandler.h"
 
-class TelegramHandler: public CivetHandler
+class TelegramHelper: public CivetHandler
 {
 public:
-    TelegramHandler(const QString& vToken, const QString& vStorageFolder, const RoutesHandler& vRoutesh);
-    void pingPong();
+    TelegramHelper(const QString& vToken, const QString& vStorageFolder, const RoutesHandler& vRoutesh);
+    void checkUpdates();
 
     bool parseUpdate(QJsonObject& updateObj, QString &httpPath, QJsonDocument &jsonDoc );
     bool replyOnChat(const QString& httpPath, const QJsonDocument& jsonDoc);
