@@ -96,85 +96,42 @@ bool TelegramHandler::parseUpdate(QJsonObject &updateObj, QString &httpPath, QJs
         allOk = parseInlineQuery( updateObj["inline_query"].toObject(), httpPath, jsonDoc );
     if(updateObj.contains("callback_query"))
         allOk = parseCallbackQuery( updateObj["callback_query"].toObject(), httpPath, jsonDoc );
+    if(updateObj.contains("poll_answer"))
+        allOk = parsePollAnswer(updateObj["poll_answer"].toObject(), httpPath, jsonDoc);
+    if(updateObj.contains("poll"))
+        allOk = parsePoll(updateObj["poll"].toObject(), httpPath, jsonDoc);
 
     return allOk;
 }
 
 bool TelegramHandler::parseMessage(const QJsonObject &messageObj, QString &httpPath, QJsonDocument &jsonDoc)
 {
-    bool allOk(false);
+    bool allOk(true);
     if(messageObj.contains("chat")) {
         QString messageText = messageObj["text"].toString();
-        QDateTime messageTime = QDateTime::fromTime_t( uint(messageObj["date"].toInt()) );
-
         QJsonObject chatObj = messageObj["chat"].toObject();
 
         int chatId = chatObj["id"].toInt();
         QString first_name = chatObj["first_name"].toString();
+        if(first_name.isEmpty())    first_name = chatObj["title"].toString();
 
         qDebug() << "Message from" << first_name;
 
-        QJsonObject replyMarkup;
-        QString toSendText;
-        QString toSendPic;
-        QPointF toSendPos(0,0);
-        bool toSendPosReady(false);
+        bool doReplyToChat(true);
 
         if(messageObj.contains("entities")) {
             QJsonArray nttsArr = messageObj["entities"].toArray();
             for(auto curNtt: nttsArr){
                 QJsonObject currNttObj = curNtt.toObject();
                 if(currNttObj.contains("type") && currNttObj["type"].toString().compare("bot_command") == 0){
-                    if(messageText.startsWith("/start")) {
-                        toSendText = QString("%1 welcome to BignoDevBot").arg(first_name);
-                        if(messageText.length() > 6){
-                            QString userParam = messageText.mid(6).trimmed();
-                            setChatParameter(chatId, userParam);
-                            if(!userParam.isEmpty()) {
-                                toSendText.append("\nWith parameter: ");
-                                toSendText.append(userParam);
-                            }
-                        }
-                    }
-                    else if(messageText.startsWith("/help")) {
-                        toSendText = "Help message";
-                        if(messageText.length() > 6) {
-                            toSendText.append(" on topic: ");
-                            toSendText.append(messageText.mid(6));
-                        }
-
-                        QString userParam = getChatParameter(chatId, "");
-                        if(!userParam.isEmpty()) {
-                            toSendText.append("\nWith parameter: ");
-                            toSendText.append(userParam);
-                        }
-                    }
-                    else if(messageText.startsWith("/gatto")) {
-                        toSendPic = "https://thiscatdoesnotexist.com/";
-                    }
-                    else if(messageText.startsWith("/posizione")) {
-                        QString userParam = getChatParameter(chatId, "");
-                        if(!userParam.isEmpty()) {
-                            int routeId = userParam.replace("route", "").toInt();
-                            toSendPosReady = routesh.getPos(routeId, toSendPos);
-                        }
-                        else {
-                            toSendText = "Questa chat non è collegata ad alcuna sessione";
-                        }
-                    }
-                    else if(messageText.startsWith("/contattami")) {
-                        toSendText = "Chiedo informazioni di contatto";
-                        createContactKeyboard(replyMarkup);
-                    }
-                    else if(messageText.startsWith("/domanda")) {
-                        toSendText = "Ti faccio una domanda";
-                        createInlineKeyboard(replyMarkup);
-                    }
+                    allOk = parseCommand(chatId, first_name, messageText, doReplyToChat, httpPath, jsonDoc);
                 }
             }
         }
 
-        if(toSendText.isEmpty() && toSendPic.isEmpty() && !toSendPosReady) {
+        if(doReplyToChat) {
+            QDateTime messageTime = QDateTime::fromTime_t( uint(messageObj["date"].toInt()) );
+            QString toSendText;
 
             if(messageObj.contains("contact")) {
                 QJsonObject contactObj = messageObj["contact"].toObject();
@@ -185,11 +142,14 @@ bool TelegramHandler::parseMessage(const QJsonObject &messageObj, QString &httpP
             }
             else if(messageObj.contains("location")) {
                 QJsonObject locationObj = messageObj["location"].toObject();
-                toSendText = QString("Received location: %1-%2, from: %3, at %4")
+                toSendText = QString("Received location: %1, %2, from: %3")
                     .arg(locationObj["latitude"].toDouble(),6,'f')
                     .arg(locationObj["longitude"].toDouble(),6,'f')
-                    .arg(first_name)
-                    .arg(messageTime.toString());
+                    .arg(first_name);
+            }
+            else if(messageObj.contains("new_chat_participant")) {
+                QJsonObject new_chat_participantObj = messageObj["new_chat_participant"].toObject();
+                toSendText = QString("Benvenuto: %1").arg(new_chat_participantObj["first_name"].toString());
             }
             else {
                 toSendText = QString("Received: %1, from: %2, at %3")
@@ -197,15 +157,10 @@ bool TelegramHandler::parseMessage(const QJsonObject &messageObj, QString &httpP
                     .arg(first_name)
                     .arg(messageTime.toString());
             }
+
+            if(!toSendText.isEmpty())
+                allOk = makeMessage(chatId, toSendText, QJsonObject(), httpPath, jsonDoc);
         }
-
-        if(!toSendText.isEmpty())
-            allOk = makeMessage(chatId, toSendText, replyMarkup, httpPath, jsonDoc);
-        else if(!toSendPic.isEmpty())
-            allOk = makePhoto(chatId, toSendPic, httpPath, jsonDoc);
-        else if(toSendPosReady)
-            allOk = makePosition(chatId, toSendPos, httpPath, jsonDoc);
-
     }
     return allOk;
 }
@@ -277,7 +232,118 @@ bool TelegramHandler::parseCallbackQuery(const QJsonObject &messageObj, QString 
     return allOk;
 }
 
-bool TelegramHandler::makeMessage(int chatId, const QString &message, QJsonObject& replyMarkup, QString &httpPath, QJsonDocument &jsonDoc)
+bool TelegramHandler::parsePollAnswer(const QJsonObject &messageObj, QString & /*httpPath*/, QJsonDocument & /*jsonDoc*/)
+{
+    bool allOk(false);
+    if(messageObj.contains("user")) {
+        QString first_name = messageObj["user"]["first_name"].toString();
+        QJsonArray option_ids = messageObj["option_ids"].toArray();
+
+        qDebug() << "Poll answer from" << first_name << "options:";
+        for(const auto curOpt: option_ids){
+            qDebug() << curOpt.toInt();
+        }
+
+        allOk = true;
+    }
+    return allOk;
+}
+
+bool TelegramHandler::parsePoll(const QJsonObject &messageObj, QString & /*httpPath*/, QJsonDocument & /*jsonDoc*/)
+{
+    bool allOk(false);
+    if(messageObj.contains("question")) {
+        QString question = messageObj["question"].toString();
+        QJsonArray options = messageObj["options"].toArray();
+
+        qDebug() << "Poll " << question << "summary:";
+        for(const auto curOpt: options){
+            QJsonObject curOptObj = curOpt.toObject();
+            qDebug() << curOptObj["text"].toString() << curOptObj["voter_count"].toInt() << "votes";
+        }
+
+        allOk = true;
+    }
+    return allOk;
+}
+
+bool TelegramHandler::parseCommand(int chatId, const QString &first_name, const QString &messageText, bool &unknownCommand, QString &httpPath, QJsonDocument &jsonDoc)
+{
+    bool allOk(true);
+
+    unknownCommand = false;
+    if(messageText.startsWith("/start")) {
+        QString toSendText = QString("%1 welcome to BignoDevBot").arg(first_name);
+        if(messageText.length() > 6){
+            QString userParam = messageText.mid(6).trimmed();
+            setChatParameter(chatId, userParam);
+            if(!userParam.isEmpty()) {
+                toSendText.append("\nWith parameter: ");
+                toSendText.append(userParam);
+            }
+        }
+        allOk = makeMessage(chatId, toSendText, QJsonObject(), httpPath, jsonDoc);
+    }
+    else if(messageText.startsWith("/help")) {
+        QString toSendText = "Help message";
+        if(messageText.length() > 6) {
+            toSendText.append(" on topic: ");
+            toSendText.append(messageText.mid(6));
+        }
+
+        QString userParam = getChatParameter(chatId, "");
+        if(!userParam.isEmpty()) {
+            toSendText.append("\nWith parameter: ");
+            toSendText.append(userParam);
+        }
+
+        allOk = makeMessage(chatId, toSendText, QJsonObject(), httpPath, jsonDoc);
+    }
+    else if(messageText.startsWith("/gatto")) {
+        QString toSendPic = "https://thiscatdoesnotexist.com/";
+        allOk = makePhoto(chatId, toSendPic, httpPath, jsonDoc);
+    }
+    else if(messageText.startsWith("/posizione")) {
+        QString userParam = getChatParameter(chatId, "");
+        if(!userParam.isEmpty()) {
+            int routeId = userParam.replace("route", "").toInt();
+            QPointF toSendPos(0,0);
+            bool toSendPosReady = routesh.getPos(routeId, toSendPos);
+            if(toSendPosReady) {
+                allOk = makePosition(chatId, toSendPos, httpPath, jsonDoc);
+            }
+            else {
+                QString toSendText = "Error fetching position";
+                allOk = makeMessage(chatId, toSendText, QJsonObject(), httpPath, jsonDoc);
+            }
+        }
+        else {
+            QString toSendText = "Questa chat non è collegata ad alcuna sessione";
+            allOk = makeMessage(chatId, toSendText, QJsonObject(), httpPath, jsonDoc);
+        }
+    }
+    else if(messageText.startsWith("/contattami")) {
+        QJsonObject replyMarkup;
+        QString toSendText = "Chiedo informazioni di contatto";
+        createContactKeyboard(replyMarkup);
+        allOk = makeMessage(chatId, toSendText, replyMarkup, httpPath, jsonDoc);
+    }
+    else if(messageText.startsWith("/domanda")) {
+        QJsonObject replyMarkup;
+        QString toSendText = "Ti faccio una domanda";
+        createInlineKeyboard(replyMarkup);
+        allOk = makeMessage(chatId, toSendText, replyMarkup, httpPath, jsonDoc);
+    }
+    else if(messageText.startsWith("/sondaggio")) {
+        allOk = makePoll(chatId, httpPath, jsonDoc);
+    }
+    else
+        unknownCommand = true;
+
+    return allOk;
+}
+
+bool TelegramHandler::makeMessage(int chatId, const QString &message, const QJsonObject& replyMarkup, QString &httpPath, QJsonDocument &jsonDoc)
 {
     httpPath = QString("/bot%1/sendMessage").arg(token);
 
@@ -350,6 +416,28 @@ bool TelegramHandler::makeAnswerCallbackQuery(const QString& callbackQueryId, co
     root["callback_query_id"] = callbackQueryId;
     root["text"] = message;
     root["show_alert"] = true;
+
+    jsonDoc.setObject(root);
+
+    return true;
+}
+
+bool TelegramHandler::makePoll(int chatId, QString &httpPath, QJsonDocument &jsonDoc)
+{
+    httpPath = QString("/bot%1/sendPoll").arg(token);
+
+    QJsonObject root;
+    root["method"] = "sendPoll";
+    root["chat_id"] = chatId;
+    root["question"] = "Ti piace il c++?";
+    root["is_anonymous"] = false;
+
+    QJsonArray optArray;
+    optArray.append("Si");
+    optArray.append("No");
+    optArray.append("Preferisco non rispondere");
+
+    root["options"] = optArray;
 
     jsonDoc.setObject(root);
 

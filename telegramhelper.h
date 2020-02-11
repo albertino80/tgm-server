@@ -25,12 +25,16 @@ protected:
     bool parseMessage(const QJsonObject& messageObj, QString &httpPath, QJsonDocument &jsonDoc);
     bool parseInlineQuery(const QJsonObject& messageObj, QString &httpPath, QJsonDocument &jsonDoc);
     bool parseCallbackQuery(const QJsonObject& messageObj, QString &httpPath, QJsonDocument &jsonDoc);
+    bool parsePollAnswer(const QJsonObject& messageObj, QString &httpPath, QJsonDocument &jsonDoc);
+    bool parsePoll(const QJsonObject& messageObj, QString &httpPath, QJsonDocument &jsonDoc);
+    bool parseCommand(int chatId, const QString& first_name, const QString& messageText, bool& unknownCommand, QString &httpPath, QJsonDocument &jsonDoc);
 
-    bool makeMessage(int chatId, const QString& message, QJsonObject& replyMarkup, QString& httpPath, QJsonDocument& jsonDoc);
+    bool makeMessage(int chatId, const QString& message, const QJsonObject& replyMarkup, QString& httpPath, QJsonDocument& jsonDoc);
     bool makePhoto(int chatId, const QString& photoUrl, QString& httpPath, QJsonDocument& jsonDoc);
     bool makePosition(int chatId, const QPointF& thePosition, QString& httpPath, QJsonDocument& jsonDoc);
     bool makeInlineQueryResult(const QString& inlineQueryId, const QJsonArray& articles, QString& httpPath, QJsonDocument& jsonDoc);
     bool makeAnswerCallbackQuery(const QString &callbackQueryId, const QString& message, QString& httpPath, QJsonDocument& jsonDoc);
+    bool makePoll(int chatId, QString& httpPath, QJsonDocument& jsonDoc);
 
     void createContactKeyboard(QJsonObject& replyMarkup);
     void createInlineKeyboard(QJsonObject& replyMarkup);
