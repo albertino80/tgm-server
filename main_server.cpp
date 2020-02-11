@@ -7,7 +7,9 @@
 #include <cstring>
 #include "routeshandler.h"
 #include <thread>
-#include "telegrampoll.h"
+
+#include "telegramhelper.h"
+#include "telegramwebhook.h"
 
 #define EXAMPLE_URI "/example"
 #define EXIT_URI "/exit"
@@ -117,6 +119,7 @@ int main(int argc, char * argv[])
     QString srvPort = settings.value("general/port", "8081").toString();
     QString tgmToken = settings.value("telegram/token").toString();
     bool tgmPolling = settings.value("telegram/polling", "N").toString().compare("Y", Qt::CaseInsensitive) == 0;
+    QString storageRoot = settings.value("general/sessions", "storage").toString();
 
     std::vector<std::string> options;
     options.push_back( "document_root" );
@@ -139,13 +142,16 @@ int main(int argc, char * argv[])
     h_r.parseRoutes();
     server.addHandler("/routes", h_r);
 
+    TelegramWebHook tgmHook(tgmToken, storageRoot, h_r);
+    server.addHandler("/telegramNewUpdate", tgmHook);
+
     printf("Run example at http://localhost:%s%s\n", srvPort.toStdString().c_str(), "/example");
     printf("Exit at http://localhost:%s%s\n", srvPort.toStdString().c_str(), "/exit");
 
-    TelegramPoll tgmPoll(tgmToken);
+    TelegramHandler tgmPoll(tgmToken, storageRoot, h_r);
 
     while (!exitNow) {
-        std::this_thread::sleep_for (std::chrono::seconds(3));
+        std::this_thread::sleep_for (std::chrono::seconds(2));
         if(tgmPolling) {
             tgmPoll.pingPong();
         }

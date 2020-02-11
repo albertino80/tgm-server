@@ -26,7 +26,8 @@ SOURCES += \
         ../civetweb/src/CivetServer.cpp \
         main_server.cpp \
         routeshandler.cpp \
-        telegrampoll.cpp
+        telegramhelper.cpp \
+        telegramwebhook.cpp
 
 INCLUDEPATH += $$PWD/../civetweb/include
 
@@ -37,4 +38,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
 	routeshandler.h \
-	telegrampoll.h
+	telegramhelper.h \
+	telegramwebhook.h

@@ -12,6 +12,7 @@ public:
 
     bool parseRoutes();
     bool handleGet(CivetServer *server, struct mg_connection *conn);
+    bool getPos(int routeId, QPointF& thePosition) const;
 
 protected:
     int sendResponse(CivetServer *server, struct mg_connection *conn, const QByteArray& reply);

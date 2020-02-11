@@ -100,6 +100,21 @@ bool RoutesHandler::handleGet(CivetServer *server, mg_connection *conn)
     return sendResponse(server, conn, saveDoc.toJson(QJsonDocument::Compact) ) > 0;
 }
 
+bool RoutesHandler::getPos(int routeId, QPointF &thePosition) const
+{
+    if(routeId >= routes.size() || routeId < 0)
+        return false;
+
+    const QVector<QPointF>& curRoute = routes[routeId];
+    QTime now( QTime::currentTime() );
+    int iPoint = now.second() % curRoute.size();
+
+    thePosition.setX( curRoute[iPoint].x() );
+    thePosition.setY( curRoute[iPoint].y() );
+
+    return true;
+}
+
 int RoutesHandler::sendResponse(CivetServer * /*server*/, struct mg_connection *conn, const QByteArray &reply)
 {
     int httpReturnCode = 200;
