@@ -369,7 +369,7 @@ bool TelegramHelper::makePhoto(int chatId, const QString &photoUrl, QString &htt
     httpPath = QString("/bot%1/sendPhoto").arg(token);
 
     QJsonObject root;
-    root["method"] = "sendMessage";
+    root["method"] = "sendPhoto";
     root["chat_id"] = chatId;
     root["photo"] = photoUrl;
 

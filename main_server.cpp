@@ -16,7 +16,6 @@ static volatile bool exitNow = false;
 #include "telegramhelper.h"
 #include "telegramwebhook.h"
 
-
 bool parseConfig(QString& tgmToken, QString& storageRoot, bool& tgmPolling, std::vector<std::string>& options){
     if(!QFile::exists("server.ini")){
         qDebug() << "Missing server.ini";
@@ -114,8 +113,10 @@ class ExampleHandler : public CivetHandler
 
 int main(int /*argc*/, char * /*argv*/[])
 {
-    const char *options[] = {"document_root", ".", "listening_ports", "8081", nullptr};
-    CivetServer server(options);
+    CivetServer server({
+       "document_root", ".",
+       "listening_ports", "8081"
+    });
 
     ExampleHandler h_example;
     server.addHandler("/example", h_example);

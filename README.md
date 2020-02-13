@@ -13,4 +13,5 @@ Depends on civetweb as embedded C/C++ web server
 * git clone git@github.com:albertino80/tgm-server.git
 * cd tgm-server
 * open tgm-server.pro with Qt Creator
-
+* ensure to have OpenSSL binaries in PATH (for HTTPS)
+* set ./tgm-server as workdir to debug
