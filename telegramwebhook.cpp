@@ -16,29 +16,29 @@ TelegramWebHook::TelegramWebHook(const QString &vToken, const QString &vStorageF
 
 bool TelegramWebHook::handlePost(CivetServer *server, mg_connection *conn)
 {
-    const std::string payloadStr = server->getPostData(conn);
-
-    if(payloadStr.empty())
-        return false;
-
     bool allOk(false);
 
+    //get http payload, our json with message
+    const std::string payloadStr = server->getPostData(conn);
+    if(payloadStr.empty()) return allOk;
     QByteArray playloadBytes( payloadStr.c_str(), int(payloadStr.size()) );
 
+    //decode as json
     QJsonDocument d = QJsonDocument::fromJson( playloadBytes );
-    //QJsonDocument d = QJsonDocument::fromRawData( payloadStr.c_str(), int(payloadStr.size()) );
     if(!d.isNull()){
-
-        TelegramHelper tgmHelp(token, storageFolder, routesh);
-
         QJsonObject root = d.object();
 
-        QString httpPath;
-        QJsonDocument jsonDoc;
+        //instatiate helper class (same as polling mode)
+        TelegramHelper tgmHelp(token, storageFolder, routesh);
 
+        QString httpPath; //url to call for sending reply
+        QJsonDocument jsonDoc; //body of the reply
+
+        //for each message get a properly reply
         allOk = tgmHelp.parseUpdate(root, httpPath, jsonDoc);
         if(allOk) {
             if(!httpPath.isEmpty()) {
+                //if there is something, send reply to the user
                 if(tgmHelp.replyOnChat(httpPath, jsonDoc)) {
                     qDebug() << "Delivered ok";
                     allOk = true;
@@ -47,6 +47,7 @@ bool TelegramWebHook::handlePost(CivetServer *server, mg_connection *conn)
         }
     }
 
+    //reply to telegram call, { "ok"=true }
     QJsonObject outPos;
     outPos["ok"] = allOk;
     QJsonDocument saveDoc(outPos);
@@ -60,14 +61,14 @@ int TelegramWebHook::sendResponse(CivetServer * /*server*/, struct mg_connection
     QString contentType = "application/json; charset=utf-8";
     const char *connectionFlag("close");
 
+    //check if caller support keep-alive
     const char *headerConnection = CivetServer::getHeader(conn, "param");
     if (headerConnection) {
-        if( strncmp(headerConnection, "keep-alive", 10 ) == 0)
-            connectionFlag = "keep-alive";
-        else if( strncmp(headerConnection, "Keep-Alive", 10 ) == 0)
+        if( mg_strncasecmp(headerConnection, "keep-alive", 10 ) == 0)
             connectionFlag = "keep-alive";
     }
 
+    //send http header
     int sentData = mg_printf(conn,"HTTP/1.1 %d OK\r\n"
                    "Content-Length: %lu\r\n"
                    "Content-Type: %s\r\n"
@@ -76,6 +77,7 @@ int TelegramWebHook::sendResponse(CivetServer * /*server*/, struct mg_connection
                    httpReturnCode, len, contentType.toUtf8().data(), connectionFlag
     );
 
+    //send http payload
     sentData += mg_write(conn, reply.data(), len);
 
     return sentData;

@@ -57,6 +57,7 @@ int main(int argc, char * argv[])
 {
     QCoreApplication a(argc, argv);
 
+    //initialize the BOT server
     QSettings settings("server.ini", QSettings::IniFormat);
 
     QString tgmToken, storageRoot;
@@ -66,19 +67,22 @@ int main(int argc, char * argv[])
     if(!parseConfig(tgmToken, storageRoot, tgmPolling, options))
         return 1;
 
+    //start web server
     CivetServer server(options);
 
+    //register web handlers
     RoutesHandler h_r;
     h_r.parseRoutes();
     server.addHandler("/routes", h_r);
 
     TelegramWebHook tgmHook(tgmToken, storageRoot, h_r);
-    server.addHandler("/telegramNewUpdate", tgmHook);
+    server.addHandler("/telegramNewUpdate", tgmHook); //this is for tgm webhook
 
+    //helper object for polling mode
     TelegramHelper pollingLoop(tgmToken, storageRoot, h_r);
     while (!exitNow) {
         std::this_thread::sleep_for (std::chrono::seconds(2));
-        if(tgmPolling)
+        if(tgmPolling) //only if polling enabled
             pollingLoop.checkUpdates();
     }
 

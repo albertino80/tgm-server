@@ -25,11 +25,7 @@ void TelegramHelper::checkUpdates()
 {
     qDebug() << "Called" << __FUNCTION__;
 
-    QNetworkRequest request;
-    QEventLoop synchronous;
-
-    QObject::connect(&manager, SIGNAL(finished(QNetworkReply*)), &synchronous, SLOT(quit()));
-
+    //compose url to check new messages
     QUrl toCall("https://api.telegram.org");
     QUrlQuery query;
 
@@ -38,40 +34,38 @@ void TelegramHelper::checkUpdates()
         query.addQueryItem("offset", QString::number(lastUpdateId + 1));
     toCall.setQuery(query);
 
-    request.setUrl(toCall);
+    //ask the server
+    QByteArray recvJson = makeHttpGet(toCall);
 
-    QNetworkReply *reply = manager.get(request);
-
-    synchronous.exec();
-
-    if (reply->error()) {
-        qDebug() << reply->errorString();
-        return;
-    }
-
-    parseGetUpdates(reply->readAll());
+    //if there is something, parse the update
+    if(!recvJson.isEmpty())
+        parseGetUpdates(recvJson);
 }
 
 bool TelegramHelper::parseGetUpdates(const QByteArray &payload)
 {
     bool messageIsOk(false);
 
+    //decode json
     QJsonDocument d = QJsonDocument::fromJson( payload );
     if(!d.isNull())
     {
         QJsonObject root = d.object();
         messageIsOk = (root.contains("ok") && root["ok"].toBool() == true);
         if(messageIsOk && root.contains("result")) {
+            //get result array, that contains our messages
             QJsonArray arrResult = root["result"].toArray();
             for(auto aRes: arrResult){
                 QJsonObject updateObj = aRes.toObject();
 
-                QString httpPath;
-                QJsonDocument jsonDoc;
+                QString httpPath; //url to call for sending reply
+                QJsonDocument jsonDoc; //body of the reply
 
+                //for each message get a properly reply
                 bool allOk = parseUpdate(updateObj, httpPath, jsonDoc);
                 if(allOk) {
                     if(!httpPath.isEmpty()) {
+                        //if there is something, send reply to the user
                         if(replyOnChat(httpPath, jsonDoc))
                             qDebug() << "Delivered ok";
                     }
@@ -87,9 +81,11 @@ bool TelegramHelper::parseUpdate(QJsonObject &updateObj, QString &httpPath, QJso
 {
     bool allOk(true);
 
+    //update update_id for next call
     int update_id = updateObj["update_id"].toInt();
     if(update_id > lastUpdateId)    lastUpdateId = update_id;
 
+    //we can receive different type of messages
     if(updateObj.contains("message"))
         allOk = parseMessage( updateObj["message"].toObject(), httpPath, jsonDoc);
     if(updateObj.contains("inline_query"))
@@ -108,6 +104,7 @@ bool TelegramHelper::parseMessage(const QJsonObject &messageObj, QString &httpPa
 {
     bool allOk(true);
     if(messageObj.contains("chat")) {
+        //get user and chat parameters
         QString messageText = messageObj["text"].toString();
         QJsonObject chatObj = messageObj["chat"].toObject();
 
@@ -119,6 +116,7 @@ bool TelegramHelper::parseMessage(const QJsonObject &messageObj, QString &httpPa
 
         bool doReplyToChat(true);
 
+        //check if it is a command (starts with slash)
         if(messageObj.contains("entities")) {
             QJsonArray nttsArr = messageObj["entities"].toArray();
             for(auto curNtt: nttsArr){
@@ -129,11 +127,13 @@ bool TelegramHelper::parseMessage(const QJsonObject &messageObj, QString &httpPa
             }
         }
 
+        //if no command handled compose a reply
         if(doReplyToChat) {
             QDateTime messageTime = QDateTime::fromTime_t( uint(messageObj["date"].toInt()) );
             QString toSendText;
 
             if(messageObj.contains("contact")) {
+                //received user contact informations
                 QJsonObject contactObj = messageObj["contact"].toObject();
                 toSendText = QString("Received contact: %1, from: %2, at %3")
                     .arg(contactObj["phone_number"].toString())
@@ -141,6 +141,7 @@ bool TelegramHelper::parseMessage(const QJsonObject &messageObj, QString &httpPa
                     .arg(messageTime.toString());
             }
             else if(messageObj.contains("location")) {
+                //received user location
                 QJsonObject locationObj = messageObj["location"].toObject();
                 toSendText = QString("Received location: %1, %2, from: %3")
                     .arg(locationObj["latitude"].toDouble(),6,'f')
@@ -148,16 +149,19 @@ bool TelegramHelper::parseMessage(const QJsonObject &messageObj, QString &httpPa
                     .arg(first_name);
             }
             else if(messageObj.contains("new_chat_participant")) {
+                //received notification that new user is added to a group
                 QJsonObject new_chat_participantObj = messageObj["new_chat_participant"].toObject();
                 toSendText = QString("Benvenuto: %1").arg(new_chat_participantObj["first_name"].toString());
             }
             else {
+                //simple text message, reply with same message
                 toSendText = QString("Received: %1, from: %2, at %3")
                     .arg(messageText)
                     .arg(first_name)
                     .arg(messageTime.toString());
             }
 
+            //if there is some text to send, compose message payload
             if(!toSendText.isEmpty())
                 allOk = makeMessage(chatId, toSendText, QJsonObject(), httpPath, jsonDoc);
         }
@@ -273,8 +277,10 @@ bool TelegramHelper::parseCommand(int chatId, const QString &first_name, const Q
 
     unknownCommand = false;
     if(messageText.startsWith("/start")) {
+        //first time I see this user
         QString toSendText = QString("%1 welcome to BignoDevBot").arg(first_name);
         if(messageText.length() > 6){
+            //strip text after /start, the parameter and store it
             QString userParam = messageText.mid(6).trimmed();
             setChatParameter(chatId, userParam);
             if(!userParam.isEmpty()) {
@@ -285,12 +291,15 @@ bool TelegramHelper::parseCommand(int chatId, const QString &first_name, const Q
         allOk = makeMessage(chatId, toSendText, QJsonObject(), httpPath, jsonDoc);
     }
     else if(messageText.startsWith("/help")) {
+        //ask for help
         QString toSendText = "Help message";
         if(messageText.length() > 6) {
+            //strip text after /help
             toSendText.append(" on topic: ");
             toSendText.append(messageText.mid(6));
         }
 
+        //if this user has a starting parameter display it
         QString userParam = getChatParameter(chatId, "");
         if(!userParam.isEmpty()) {
             toSendText.append("\nWith parameter: ");
@@ -300,10 +309,12 @@ bool TelegramHelper::parseCommand(int chatId, const QString &first_name, const Q
         allOk = makeMessage(chatId, toSendText, QJsonObject(), httpPath, jsonDoc);
     }
     else if(messageText.startsWith("/gatto")) {
+        //send a cat to the user
         QString toSendPic = "https://thiscatdoesnotexist.com/";
         allOk = makePhoto(chatId, toSendPic, httpPath, jsonDoc);
     }
     else if(messageText.startsWith("/posizione")) {
+        //send a position to the user
         QString userParam = getChatParameter(chatId, "");
         if(!userParam.isEmpty()) {
             int routeId = userParam.replace("route", "").toInt();
@@ -323,18 +334,21 @@ bool TelegramHelper::parseCommand(int chatId, const QString &first_name, const Q
         }
     }
     else if(messageText.startsWith("/contattami")) {
+        //ask for contact informations
         QJsonObject replyMarkup;
         QString toSendText = "Chiedo informazioni di contatto";
         createContactKeyboard(replyMarkup);
         allOk = makeMessage(chatId, toSendText, replyMarkup, httpPath, jsonDoc);
     }
     else if(messageText.startsWith("/domanda")) {
+        //ask for a question
         QJsonObject replyMarkup;
         QString toSendText = "Ti faccio una domanda";
         createInlineKeyboard(replyMarkup);
         allOk = makeMessage(chatId, toSendText, replyMarkup, httpPath, jsonDoc);
     }
     else if(messageText.startsWith("/sondaggio")) {
+        //make a poll
         allOk = makePoll(chatId, httpPath, jsonDoc);
     }
     else
@@ -499,29 +513,59 @@ void TelegramHelper::createInlineKeyboard(QJsonObject &replyMarkup)
     replyMarkup["inline_keyboard"] = arrRows;
 }
 
-bool TelegramHelper::replyOnChat(const QString &httpPath, const QJsonDocument &jsonDoc)
+QByteArray TelegramHelper::makeHttpGet(const QUrl &toCall)
 {
     QNetworkRequest request;
     QEventLoop synchronous;
 
     QObject::connect(&manager, SIGNAL(finished(QNetworkReply*)), &synchronous, SLOT(quit()));
 
-    QUrl toCall("https://api.telegram.org");
-    toCall.setPath( httpPath );
-
     request.setUrl(toCall);
-    request.setHeader(QNetworkRequest::ContentTypeHeader,QVariant("application/json"));
 
-    QNetworkReply *reply = manager.post(request, jsonDoc.toJson(QJsonDocument::Compact));
+    QNetworkReply *reply = manager.get(request);
 
     synchronous.exec();
 
     if (reply->error()) {
         qDebug() << reply->errorString();
-        return false;
+        return QByteArray();
+    }
+    return reply->readAll();
+}
+
+QByteArray TelegramHelper::makeHttpPost(const QUrl &toCall, const QString &contentType, const QByteArray &toSend)
+{
+    QNetworkRequest request;
+    QEventLoop synchronous;
+
+    QObject::connect(&manager, SIGNAL(finished(QNetworkReply*)), &synchronous, SLOT(quit()));
+
+    request.setUrl(toCall);
+    request.setHeader(QNetworkRequest::ContentTypeHeader,QVariant(contentType));
+
+    QNetworkReply *reply = manager.post(request, toSend);
+
+    synchronous.exec();
+
+    if (reply->error()) {
+        qDebug() << reply->errorString();
+        return QByteArray();
     }
 
-    return true;
+    return reply->readAll();
+}
+
+bool TelegramHelper::replyOnChat(const QString &httpPath, const QJsonDocument &jsonDoc)
+{
+    //compose url
+    QUrl toCall("https://api.telegram.org");
+    toCall.setPath( httpPath );
+
+    //send jsonDoc to the server
+    QByteArray sended = makeHttpPost(toCall, "application/json", jsonDoc.toJson(QJsonDocument::Compact));
+
+    //if not empty it's ok (not very accurate)
+    return !sended.isEmpty();
 }
 
 bool TelegramHelper::setChatParameter(int chatId, const QString &paramValue)

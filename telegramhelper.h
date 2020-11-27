@@ -39,6 +39,9 @@ protected:
     void createContactKeyboard(QJsonObject& replyMarkup);
     void createInlineKeyboard(QJsonObject& replyMarkup);
 
+    QByteArray makeHttpGet(const QUrl& toCall);
+    QByteArray makeHttpPost(const QUrl& toCall, const QString& contentType, const QByteArray& toSend);
+
     QString token;
     QString storageFolder;
     const RoutesHandler& routesh;
